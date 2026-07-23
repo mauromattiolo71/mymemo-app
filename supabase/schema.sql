@@ -60,9 +60,18 @@ create policy "Il proprietario vede sempre i propri video"
   on public.videos for select
   using (auth.uid() = user_id);
 
-create policy "Il proprietario crea i propri video"
+create policy "Solo gli abbonati pubblicano video condivisi o pubblici"
   on public.videos for insert
-  with check (auth.uid() = user_id);
+  with check (
+    auth.uid() = user_id
+    and (
+      visibility = 'private'
+      or exists (
+        select 1 from public.profiles p
+        where p.id = auth.uid() and p.subscription_active = true
+      )
+    )
+  );
 
 create policy "Il proprietario aggiorna i propri video"
   on public.videos for update
@@ -112,7 +121,56 @@ create policy "Un utente rimuove solo il proprio like"
   on public.likes for delete
   using (auth.uid() = user_id);
 
--- 4. Storage: bucket privato per i video (crea dalla dashboard Storage se questo comando fallisce)
+-- 4. Tabella "condivisioni" (Share With Your Loved Ones)
+create table if not exists public.shares (
+  id uuid primary key default gen_random_uuid(),
+  video_id uuid not null references public.videos(id) on delete cascade,
+  owner_id uuid not null references public.profiles(id) on delete cascade,
+  recipient_phone text not null,
+  invite_token uuid not null default gen_random_uuid() unique,
+  recipient_user_id uuid references public.profiles(id) on delete set null,
+  status text not null default 'pending' check (status in ('pending', 'claimed')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.shares enable row level security;
+
+create policy "Il mittente vede le proprie condivisioni"
+  on public.shares for select
+  using (auth.uid() = owner_id);
+
+create policy "Il destinatario vede le condivisioni ricevute"
+  on public.shares for select
+  using (auth.uid() = recipient_user_id);
+
+create policy "Solo abbonati creano condivisioni dei propri video"
+  on public.shares for insert
+  with check (
+    auth.uid() = owner_id
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.subscription_active = true
+    )
+    and exists (
+      select 1 from public.videos v
+      where v.id = video_id and v.user_id = auth.uid() and v.visibility = 'custode'
+    )
+  );
+
+-- Ora che la tabella esiste, aggiungiamo la policy sui video che dipende da essa
+create policy "Il destinatario vede i video condivisi con lui"
+  on public.videos for select
+  using (
+    visibility = 'custode'
+    and exists (
+      select 1 from public.shares s
+      where s.video_id = videos.id
+        and s.recipient_user_id = auth.uid()
+        and s.status = 'claimed'
+    )
+  );
+
+-- 5. Storage: bucket privato per i video (crea dalla dashboard Storage se questo comando fallisce)
 insert into storage.buckets (id, name, public)
 values ('videos', 'videos', false)
 on conflict (id) do nothing;

@@ -23,8 +23,11 @@ export default async function NavBar() {
               <Link href="/record" className="transition-colors hover:text-foreground">
                 Record
               </Link>
+              <Link href="/received" className="transition-colors hover:text-foreground">
+                Received
+              </Link>
               <Link href="/feed" className="transition-colors hover:text-foreground">
-                Community
+                Shout It to the World
               </Link>
               {isAdminEmail(user.email) && (
                 <Link href="/admin" className="transition-colors hover:text-foreground">

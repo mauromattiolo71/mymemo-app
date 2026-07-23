@@ -25,18 +25,19 @@ export default function SubscribePage() {
         Subscription
       </p>
       <h1 className="mb-3 font-serif text-3xl text-foreground">
-        MyMemo Community
+        MyMemo Subscription
       </h1>
       <p className="mb-8 text-sm leading-relaxed text-muted">
-        €0.50 a month to watch public testimonials from other MyMemo users
-        and leave a &quot;like&quot;.
+        €5.99 a year unlocks both: share a message privately with your loved
+        ones by phone, and publish to Shout It to the World to be part of
+        the public community.
       </p>
       <button
         onClick={subscribe}
         disabled={loading}
         className="rounded-full bg-accent px-7 py-3 text-sm font-medium text-accent-foreground shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50"
       >
-        {loading ? "Please wait..." : "Subscribe for €0.50/month"}
+        {loading ? "Please wait..." : "Subscribe for €5.99/year"}
       </button>
       {error && <p className="mt-4 text-sm text-danger">{error}</p>}
     </div>

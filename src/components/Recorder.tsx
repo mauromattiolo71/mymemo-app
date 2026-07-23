@@ -2,12 +2,20 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import fixWebmDuration from "fix-webm-duration";
 import { createClient } from "@/lib/supabase/client";
+import ShareManager from "@/components/ShareManager";
 
-type Visibility = "private" | "public";
+type Visibility = "private" | "custode" | "public";
 
-export default function Recorder({ userId }: { userId: string }) {
+export default function Recorder({
+  userId,
+  subscriptionActive,
+}: {
+  userId: string;
+  subscriptionActive: boolean;
+}) {
   const supabase = createClient();
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -24,6 +32,7 @@ export default function Recorder({ userId }: { userId: string }) {
   const [visibility, setVisibility] = useState<Visibility>("private");
   const [status, setStatus] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [publishedShareVideoId, setPublishedShareVideoId] = useState<string | null>(null);
 
   const MIN_RECORDING_MS = 1200;
   const MIN_BLOB_BYTES = 2000;
@@ -117,6 +126,7 @@ export default function Recorder({ userId }: { userId: string }) {
     if (!recordedBlob) return;
     setUploading(true);
     setStatus(null);
+    setPublishedShareVideoId(null);
 
     const fileName = `${userId}/${crypto.randomUUID()}.webm`;
 
@@ -130,12 +140,16 @@ export default function Recorder({ userId }: { userId: string }) {
       return;
     }
 
-    const { error: insertError } = await supabase.from("videos").insert({
-      user_id: userId,
-      storage_path: fileName,
-      title: title || null,
-      visibility,
-    });
+    const { data: inserted, error: insertError } = await supabase
+      .from("videos")
+      .insert({
+        user_id: userId,
+        storage_path: fileName,
+        title: title || null,
+        visibility,
+      })
+      .select("id")
+      .single();
 
     setUploading(false);
 
@@ -147,6 +161,9 @@ export default function Recorder({ userId }: { userId: string }) {
     setStatus("Your message has been saved.");
     setRecordedBlob(null);
     setTitle("");
+    if (visibility === "custode" && inserted) {
+      setPublishedShareVideoId(inserted.id);
+    }
     router.refresh();
   }
 
@@ -217,11 +234,23 @@ export default function Recorder({ userId }: { userId: string }) {
               onChange={(e) => setVisibility(e.target.value as Visibility)}
               className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-accent focus:outline-none"
             >
-              <option value="private">Private (only me)</option>
-              <option value="public">
-                Public (visible to subscribers, after moderation)
+              <option value="private">Private (only me, free)</option>
+              <option value="custode" disabled={!subscriptionActive}>
+                Share With Your Loved Ones{!subscriptionActive ? " (subscription required)" : ""}
+              </option>
+              <option value="public" disabled={!subscriptionActive}>
+                Shout It to the World{!subscriptionActive ? " (subscription required)" : ""}
               </option>
             </select>
+            {!subscriptionActive && (
+              <p className="text-xs text-muted">
+                Sharing with loved ones or the world needs the{" "}
+                <Link href="/subscribe" className="text-accent underline">
+                  subscription
+                </Link>
+                .
+              </p>
+            )}
           </div>
 
           <div className="flex gap-2">
@@ -244,6 +273,8 @@ export default function Recorder({ userId }: { userId: string }) {
       )}
 
       {status && <p className="text-sm text-muted">{status}</p>}
+
+      {publishedShareVideoId && <ShareManager videoId={publishedShareVideoId} />}
     </div>
   );
 }

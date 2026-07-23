@@ -24,20 +24,20 @@ export default async function FeedPage() {
     return (
       <div className="mx-auto flex max-w-lg flex-1 flex-col items-center justify-center px-4 py-16 text-center">
         <p className="mb-2 font-serif text-sm italic tracking-[0.2em] text-accent uppercase">
-          Community
+          Shout It to the World
         </p>
         <h1 className="mb-3 font-serif text-3xl text-foreground">
           Listen to other voices
         </h1>
         <p className="mb-8 text-sm leading-relaxed text-muted">
-          Subscribe to the community (€0.50/month) to watch public
-          testimonials and leave a &quot;like&quot;.
+          Subscribe (€5.99/year) to share with your loved ones, publish to
+          the world, and watch public testimonials.
         </p>
         <Link
           href="/subscribe"
           className="rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-accent-foreground shadow-sm transition-colors hover:bg-accent-hover"
         >
-          Subscribe for €0.50/month
+          Subscribe for €5.99/year
         </Link>
       </div>
     );
@@ -67,7 +67,7 @@ export default async function FeedPage() {
   return (
     <div className="mx-auto max-w-lg px-4 py-12">
       <p className="mb-2 font-serif text-sm italic tracking-[0.2em] text-accent uppercase">
-        Community
+        Shout It to the World
       </p>
       <h1 className="mb-8 font-serif text-3xl text-foreground">
         Shared voices

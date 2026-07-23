@@ -35,7 +35,7 @@ export default function Home() {
           href="/feed"
           className="rounded-full border border-border px-7 py-3 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted"
         >
-          Explore the community
+          Shout It to the World
         </Link>
       </div>
 
@@ -49,7 +49,8 @@ export default function Home() {
         <div>
           <p className="font-serif text-2xl text-accent">02</p>
           <p className="mt-2 text-sm text-muted">
-            You decide who can see it: only you, or the community.
+            You decide who can see it: only you, your loved ones, or the
+            whole world.
           </p>
         </div>
         <div>

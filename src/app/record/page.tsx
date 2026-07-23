@@ -13,6 +13,12 @@ export default async function RecordPage() {
     redirect("/login");
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("subscription_active")
+    .eq("id", user.id)
+    .single();
+
   const { data: videos } = await supabase
     .from("videos")
     .select("id, title, visibility, moderation_status, storage_path, created_at")
@@ -54,7 +60,7 @@ export default async function RecordPage() {
         Record a video for your loved ones. This is not a legal will: it is
         a personal message that will last forever.
       </p>
-      <Recorder userId={user.id} />
+      <Recorder userId={user.id} subscriptionActive={!!profile?.subscription_active} />
     </div>
   );
 }

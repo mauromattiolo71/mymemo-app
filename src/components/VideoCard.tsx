@@ -4,11 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import VideoPlayer from "@/components/VideoPlayer";
+import ShareManager from "@/components/ShareManager";
 
 type Props = {
   id: string;
   title: string | null;
-  visibility: "private" | "public";
+  visibility: "private" | "custode" | "public";
   moderationStatus: "pending" | "approved" | "rejected";
   storagePath: string;
 };
@@ -52,7 +53,12 @@ export default function VideoCard({
     router.refresh();
   }
 
-  const visibilityLabel = visibility === "public" ? "Public" : "Private";
+  const visibilityLabel =
+    visibility === "public"
+      ? "Shout It to the World"
+      : visibility === "custode"
+        ? "Share With Your Loved Ones"
+        : "Private";
   const statusLabel =
     visibility === "public"
       ? moderationStatus === "approved"
@@ -82,6 +88,11 @@ export default function VideoCard({
           {deleting ? "Deleting..." : "Delete"}
         </button>
       </div>
+      {visibility === "custode" && (
+        <div className="px-4 pb-4">
+          <ShareManager videoId={id} />
+        </div>
+      )}
     </div>
   );
 }

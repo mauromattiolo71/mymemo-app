@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+  const next = searchParams.get("next") || "/record";
 
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -31,7 +33,7 @@ export default function LoginPage() {
         setError(error.message);
         return;
       }
-      router.push("/record");
+      router.push(next);
       router.refresh();
       return;
     }
@@ -42,7 +44,7 @@ export default function LoginPage() {
       setError(error.message);
       return;
     }
-    router.push("/record");
+    router.push(next);
     router.refresh();
   }
 
@@ -120,5 +122,13 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
