@@ -130,3 +130,10 @@ create policy "Lettura solo della propria cartella (le pubbliche passano da API 
     bucket_id = 'videos'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
+
+create policy "Eliminazione solo della propria cartella"
+  on storage.objects for delete
+  using (
+    bucket_id = 'videos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );

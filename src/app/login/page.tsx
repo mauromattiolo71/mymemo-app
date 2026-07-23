@@ -47,72 +47,78 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[80vh] max-w-sm flex-col justify-center gap-6 px-4">
-      <div>
-        <h1 className="text-2xl font-semibold">MyMemo</h1>
-        <p className="text-sm text-neutral-500">Voce nell&apos;Infinito</p>
-      </div>
+    <div className="flex min-h-[80vh] flex-1 items-center justify-center px-4">
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-8 shadow-sm">
+        <div className="mb-6 text-center">
+          <h1 className="font-serif text-3xl italic text-foreground">MyMemo</h1>
+          <p className="mt-1 text-sm text-muted">A Voice Into Eternity</p>
+        </div>
 
-      <div className="flex gap-2 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800">
-        <button
-          type="button"
-          onClick={() => setMode("login")}
-          className={`flex-1 rounded-md py-2 text-sm font-medium ${
-            mode === "login" ? "bg-white shadow dark:bg-neutral-700" : "text-neutral-500"
-          }`}
-        >
-          Accedi
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode("signup")}
-          className={`flex-1 rounded-md py-2 text-sm font-medium ${
-            mode === "signup" ? "bg-white shadow dark:bg-neutral-700" : "text-neutral-500"
-          }`}
-        >
-          Registrati
-        </button>
-      </div>
+        <div className="mb-6 flex gap-1 rounded-full bg-surface-muted p-1">
+          <button
+            type="button"
+            onClick={() => setMode("login")}
+            className={`flex-1 rounded-full py-2 text-sm font-medium transition-colors ${
+              mode === "login"
+                ? "bg-surface text-foreground shadow-sm"
+                : "text-muted"
+            }`}
+          >
+            Log in
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("signup")}
+            className={`flex-1 rounded-full py-2 text-sm font-medium transition-colors ${
+              mode === "signup"
+                ? "bg-surface text-foreground shadow-sm"
+                : "text-muted"
+            }`}
+          >
+            Sign up
+          </button>
+        </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {mode === "signup" && (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          {mode === "signup" && (
+            <input
+              type="text"
+              placeholder="Full name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted focus:border-accent focus:outline-none"
+              required
+            />
+          )}
           <input
-            type="text"
-            placeholder="Nome e cognome"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900"
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted focus:border-accent focus:outline-none"
             required
           />
-        )}
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          minLength={6}
-          className="rounded-md border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900"
-          required
-        />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={6}
+            className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted focus:border-accent focus:outline-none"
+            required
+          />
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-danger">{error}</p>}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-md bg-neutral-900 py-2 font-medium text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-        >
-          {loading ? "Attendere..." : mode === "login" ? "Accedi" : "Crea account gratuito"}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-2 rounded-full bg-accent py-2.5 text-sm font-medium text-accent-foreground shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50"
+          >
+            {loading ? "Please wait..." : mode === "login" ? "Log in" : "Create free account"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

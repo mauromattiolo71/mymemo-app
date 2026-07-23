@@ -14,28 +14,26 @@ export default function VideoPlayer({ videoId }: { videoId: string }) {
     const data = await res.json();
     setLoading(false);
     if (!res.ok) {
-      setError(data.error ?? "Errore");
+      setError(data.error ?? "Error");
       return;
     }
     setUrl(data.url);
   }
 
   if (url) {
-    return (
-      <video src={url} controls className="aspect-video w-full rounded-lg bg-black" />
-    );
+    return <video src={url} controls className="aspect-video w-full bg-[#120f0a]" />;
   }
 
   return (
-    <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-lg bg-neutral-100 dark:bg-neutral-800">
+    <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 bg-surface-muted">
       <button
         onClick={load}
         disabled={loading}
-        className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
+        className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50"
       >
-        {loading ? "Caricamento..." : "Guarda il video"}
+        {loading ? "Loading..." : "Watch video"}
       </button>
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-danger">{error}</p>}
     </div>
   );
 }

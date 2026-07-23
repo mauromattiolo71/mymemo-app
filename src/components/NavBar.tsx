@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { isAdminEmail } from "@/lib/admin";
 
 export default async function NavBar() {
   const supabase = await createClient();
@@ -8,25 +9,49 @@ export default async function NavBar() {
   } = await supabase.auth.getUser();
 
   return (
-    <nav className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-      <Link href="/" className="font-semibold">
-        MyMemo
-      </Link>
-      <div className="flex items-center gap-4 text-sm">
-        {user ? (
-          <>
-            <Link href="/record">Registra</Link>
-            <Link href="/feed">Community</Link>
-            <Link href="/subscribe">Abbonati</Link>
-            <form action="/auth/logout" method="post">
-              <button type="submit" className="text-neutral-500">
-                Esci
-              </button>
-            </form>
-          </>
-        ) : (
-          <Link href="/login">Accedi</Link>
-        )}
+    <nav className="border-b border-border bg-surface/80 backdrop-blur supports-[backdrop-filter]:bg-surface/60">
+      <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
+        <Link
+          href="/"
+          className="font-serif text-lg italic tracking-wide text-foreground"
+        >
+          MyMemo
+        </Link>
+        <div className="flex items-center gap-5 text-sm text-muted">
+          {user ? (
+            <>
+              <Link href="/record" className="transition-colors hover:text-foreground">
+                Record
+              </Link>
+              <Link href="/feed" className="transition-colors hover:text-foreground">
+                Community
+              </Link>
+              {isAdminEmail(user.email) && (
+                <Link href="/admin" className="transition-colors hover:text-foreground">
+                  Admin
+                </Link>
+              )}
+              <Link
+                href="/subscribe"
+                className="rounded-full bg-accent px-4 py-1.5 font-medium text-accent-foreground shadow-sm transition-colors hover:bg-accent-hover"
+              >
+                Subscribe
+              </Link>
+              <form action="/auth/logout" method="post">
+                <button type="submit" className="transition-colors hover:text-foreground">
+                  Log out
+                </button>
+              </form>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-full bg-accent px-4 py-1.5 font-medium text-accent-foreground shadow-sm transition-colors hover:bg-accent-hover"
+            >
+              Log in
+            </Link>
+          )}
+        </div>
       </div>
     </nav>
   );

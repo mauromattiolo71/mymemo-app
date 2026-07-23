@@ -47,10 +47,10 @@ export default function LikeButton({
     <button
       onClick={toggle}
       disabled={busy}
-      className={`flex items-center gap-2 rounded-full border px-3 py-1 text-sm ${
+      className={`flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
         liked
-          ? "border-red-600 bg-red-50 text-red-600 dark:bg-red-950"
-          : "border-neutral-300 dark:border-neutral-700"
+          ? "border-danger bg-danger-soft text-danger"
+          : "border-border text-muted hover:text-foreground"
       }`}
     >
       <span>{liked ? "❤" : "♡"}</span>

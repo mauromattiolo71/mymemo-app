@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     );
   } catch (err) {
     return NextResponse.json(
-      { error: `Firma webhook non valida: ${(err as Error).message}` },
+      { error: `Invalid webhook signature: ${(err as Error).message}` },
       { status: 400 }
     );
   }

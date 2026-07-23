@@ -22,17 +22,22 @@ export default async function FeedPage() {
 
   if (!profile?.subscription_active) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <h1 className="mb-2 text-2xl font-semibold">Community MyMemo</h1>
-        <p className="mb-6 text-neutral-500">
-          Per vedere le testimonianze pubbliche e mettere &quot;mi piace&quot;
-          serve l&apos;abbonamento community (0,50&nbsp;€/mese).
+      <div className="mx-auto flex max-w-lg flex-1 flex-col items-center justify-center px-4 py-16 text-center">
+        <p className="mb-2 font-serif text-sm italic tracking-[0.2em] text-accent uppercase">
+          Community
+        </p>
+        <h1 className="mb-3 font-serif text-3xl text-foreground">
+          Listen to other voices
+        </h1>
+        <p className="mb-8 text-sm leading-relaxed text-muted">
+          Subscribe to the community (€0.50/month) to watch public
+          testimonials and leave a &quot;like&quot;.
         </p>
         <Link
           href="/subscribe"
-          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-neutral-900"
+          className="rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-accent-foreground shadow-sm transition-colors hover:bg-accent-hover"
         >
-          Abbonati per 0,50 € al mese
+          Subscribe for €0.50/month
         </Link>
       </div>
     );
@@ -60,16 +65,21 @@ export default async function FeedPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-8">
-      <h1 className="mb-6 text-2xl font-semibold">Community MyMemo</h1>
+    <div className="mx-auto max-w-lg px-4 py-12">
+      <p className="mb-2 font-serif text-sm italic tracking-[0.2em] text-accent uppercase">
+        Community
+      </p>
+      <h1 className="mb-8 font-serif text-3xl text-foreground">
+        Shared voices
+      </h1>
 
       {(!videos || videos.length === 0) && (
-        <p className="text-neutral-500">
-          Nessuna testimonianza pubblica ancora disponibile.
+        <p className="rounded-2xl border border-border bg-surface p-6 text-sm text-muted">
+          No public testimonials yet.
         </p>
       )}
 
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-10">
         {videos?.map((video) => {
           const likeInfo = likesByVideo.get(video.id) ?? {
             count: 0,
@@ -77,15 +87,20 @@ export default async function FeedPage() {
           };
           const authorName =
             (video.profiles as unknown as { display_name: string | null } | null)
-              ?.display_name ?? "Un utente MyMemo";
+              ?.display_name ?? "A MyMemo user";
 
           return (
-            <div key={video.id} className="flex flex-col gap-3">
+            <div
+              key={video.id}
+              className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
+            >
               <VideoPlayer videoId={video.id} />
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between px-4 py-4">
                 <div>
-                  <p className="font-medium">{video.title || "Senza titolo"}</p>
-                  <p className="text-xs text-neutral-500">{authorName}</p>
+                  <p className="font-serif text-lg text-foreground">
+                    {video.title || "Untitled"}
+                  </p>
+                  <p className="text-xs text-muted">{authorName}</p>
                 </div>
                 <LikeButton
                   videoId={video.id}

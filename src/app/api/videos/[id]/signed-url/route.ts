@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isAdminEmail } from "@/lib/admin";
 
 export async function GET(
   _request: Request,
@@ -8,25 +9,28 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  // Client "normale": la RLS decide se questo utente puo' vedere il video
-  // (proprietario, oppure pubblico+approvato+abbonato).
+  // Regular client: RLS decides whether this user can see the video
+  // (owner, or public+approved+subscribed). The admin bypasses RLS so
+  // pending/unapproved videos can be previewed for moderation.
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const { data: video, error } = await supabase
+  const queryClient = isAdminEmail(user.email) ? createAdminClient() : supabase;
+
+  const { data: video, error } = await queryClient
     .from("videos")
     .select("storage_path")
     .eq("id", id)
     .single();
 
   if (error || !video) {
-    return NextResponse.json({ error: "Video non trovato o accesso negato" }, { status: 404 });
+    return NextResponse.json({ error: "Video not found or access denied" }, { status: 404 });
   }
 
   const admin = createAdminClient();
@@ -35,7 +39,7 @@ export async function GET(
     .createSignedUrl(video.storage_path, 60);
 
   if (signError || !signed) {
-    return NextResponse.json({ error: "Impossibile generare il link" }, { status: 500 });
+    return NextResponse.json({ error: "Unable to generate the link" }, { status: 500 });
   }
 
   return NextResponse.json({ url: signed.signedUrl });

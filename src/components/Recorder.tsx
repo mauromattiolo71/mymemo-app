@@ -1,23 +1,32 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import fixWebmDuration from "fix-webm-duration";
 import { createClient } from "@/lib/supabase/client";
 
-type Visibility = "private" | "custode" | "public";
+type Visibility = "private" | "public";
 
 export default function Recorder({ userId }: { userId: string }) {
   const supabase = createClient();
+  const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const recordingStartRef = useRef<number>(0);
 
+  const [cameraReady, setCameraReady] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [canStop, setCanStop] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [title, setTitle] = useState("");
   const [visibility, setVisibility] = useState<Visibility>("private");
   const [status, setStatus] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+
+  const MIN_RECORDING_MS = 1200;
+  const MIN_BLOB_BYTES = 2000;
 
   useEffect(() => {
     return () => {
@@ -25,7 +34,7 @@ export default function Recorder({ userId }: { userId: string }) {
     };
   }, []);
 
-  async function startCamera() {
+  async function activateCamera() {
     setStatus(null);
     const stream = await navigator.mediaDevices.getUserMedia({
       video: true,
@@ -37,6 +46,7 @@ export default function Recorder({ userId }: { userId: string }) {
       videoRef.current.muted = true;
       await videoRef.current.play();
     }
+    setCameraReady(true);
   }
 
   function startRecording() {
@@ -48,8 +58,28 @@ export default function Recorder({ userId }: { userId: string }) {
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunksRef.current.push(e.data);
     };
-    recorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: "video/webm" });
+    recorder.onstop = async () => {
+      const rawBlob = new Blob(chunksRef.current, { type: "video/webm" });
+      // Stop the camera/mic tracks only now: MediaRecorder.stop() is async,
+      // stopping the tracks any earlier can cut off the final chunk of data.
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+
+      if (rawBlob.size < MIN_BLOB_BYTES) {
+        setStatus("Recording too short - please record for at least a couple of seconds and try again.");
+        setCameraReady(false);
+        if (videoRef.current) {
+          videoRef.current.srcObject = null;
+          videoRef.current.src = "";
+        }
+        return;
+      }
+
+      // MediaRecorder webm files don't embed a duration, so players show
+      // "0:00" even though the content is all there. Patch it in.
+      const duration = Date.now() - recordingStartRef.current;
+      const blob = await fixWebmDuration(rawBlob, duration, { logger: false });
+
       setRecordedBlob(blob);
       if (videoRef.current) {
         videoRef.current.srcObject = null;
@@ -58,24 +88,32 @@ export default function Recorder({ userId }: { userId: string }) {
       }
     };
     mediaRecorderRef.current = recorder;
-    recorder.start();
+    // Request a data chunk every second: short clips are more likely to
+    // produce at least one valid, non-empty chunk this way.
+    recordingStartRef.current = Date.now();
+    recorder.start(1000);
     setRecording(true);
+    setCanStop(false);
+    setTimeout(() => setCanStop(true), MIN_RECORDING_MS);
   }
 
   function stopRecording() {
+    if (!canStop) return;
     mediaRecorderRef.current?.stop();
-    streamRef.current?.getTracks().forEach((track) => track.stop());
     setRecording(false);
+    setCameraReady(false);
   }
 
-  function resetRecording() {
+  function cancelRecording() {
     setRecordedBlob(null);
+    setTitle("");
+    setStatus(null);
     if (videoRef.current) {
       videoRef.current.src = "";
     }
   }
 
-  async function upload() {
+  async function publish() {
     if (!recordedBlob) return;
     setUploading(true);
     setStatus(null);
@@ -87,7 +125,7 @@ export default function Recorder({ userId }: { userId: string }) {
       .upload(fileName, recordedBlob, { contentType: "video/webm" });
 
     if (uploadError) {
-      setStatus(`Errore durante il caricamento: ${uploadError.message}`);
+      setStatus(`Upload failed: ${uploadError.message}`);
       setUploading(false);
       return;
     }
@@ -102,98 +140,110 @@ export default function Recorder({ userId }: { userId: string }) {
     setUploading(false);
 
     if (insertError) {
-      setStatus(`Errore nel salvataggio: ${insertError.message}`);
+      setStatus(`Could not save: ${insertError.message}`);
       return;
     }
 
-    setStatus("Messaggio salvato correttamente.");
+    setStatus("Your message has been saved.");
     setRecordedBlob(null);
     setTitle("");
+    router.refresh();
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <video
-        ref={videoRef}
-        controls={!!recordedBlob}
-        playsInline
-        className="aspect-video w-full rounded-lg bg-black"
-      />
-
-      <div className="flex flex-wrap gap-2">
-        {!streamRef.current && !recordedBlob && (
-          <button
-            onClick={startCamera}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-neutral-900"
-          >
-            Attiva fotocamera
-          </button>
-        )}
-
-        {streamRef.current && !recording && !recordedBlob && (
-          <button
-            onClick={startRecording}
-            className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white"
-          >
-            Avvia registrazione
-          </button>
-        )}
-
-        {recording && (
-          <button
-            onClick={stopRecording}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-neutral-900"
-          >
-            Ferma registrazione
-          </button>
-        )}
-
-        {recordedBlob && (
-          <button
-            onClick={resetRecording}
-            className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium dark:border-neutral-700"
-          >
-            Registra di nuovo
-          </button>
-        )}
+    <div className="flex flex-col gap-5">
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+        <video
+          ref={videoRef}
+          controls={!!recordedBlob}
+          playsInline
+          className="aspect-video w-full bg-[#120f0a]"
+        />
       </div>
 
+      {!recordedBlob && (
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={activateCamera}
+            disabled={cameraReady || recording}
+            className="rounded-full border border-border px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted disabled:cursor-default disabled:opacity-50"
+          >
+            {cameraReady || recording ? "Camera on" : "Activate camera"}
+          </button>
+
+          {cameraReady && !recording && (
+            <button
+              onClick={startRecording}
+              className="flex items-center gap-2 rounded-full bg-danger px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:opacity-90"
+            >
+              <span className="h-0 w-0 border-y-[6px] border-l-[9px] border-y-transparent border-l-white" />
+              Play
+            </button>
+          )}
+
+          {recording && (
+            <button
+              onClick={stopRecording}
+              disabled={!canStop}
+              className="rounded-full bg-foreground px-5 py-2.5 text-sm font-medium text-background shadow-sm transition-colors hover:opacity-90 disabled:cursor-default disabled:opacity-50"
+            >
+              {canStop ? "Stop" : "Recording..."}
+            </button>
+          )}
+        </div>
+      )}
+
       {recordedBlob && (
-        <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+        <div className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <p className="text-sm font-medium text-foreground">
+            Review your message
+          </p>
+
           <input
             type="text"
-            placeholder="Titolo (facoltativo)"
+            placeholder="Title (optional)"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+            className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted focus:border-accent focus:outline-none"
           />
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">Chi può vederlo</label>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="visibility" className="text-sm font-medium text-foreground">
+              Who can see it
+            </label>
             <select
+              id="visibility"
               value={visibility}
               onChange={(e) => setVisibility(e.target.value as Visibility)}
-              className="rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+              className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-accent focus:outline-none"
             >
-              <option value="private">Privato (solo io)</option>
-              <option value="custode">Condiviso con il mio Custode</option>
+              <option value="private">Private (only me)</option>
               <option value="public">
-                Pubblico (visibile agli abbonati, dopo moderazione)
+                Public (visible to subscribers, after moderation)
               </option>
             </select>
           </div>
 
-          <button
-            onClick={upload}
-            disabled={uploading}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-          >
-            {uploading ? "Caricamento..." : "Salva messaggio"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={publish}
+              disabled={uploading}
+              className="flex-1 rounded-full bg-accent py-2.5 text-sm font-medium text-accent-foreground shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50"
+            >
+              {uploading ? "Publishing..." : "Publish"}
+            </button>
+            <button
+              onClick={cancelRecording}
+              disabled={uploading}
+              className="rounded-full border border-border px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 
-      {status && <p className="text-sm">{status}</p>}
+      {status && <p className="text-sm text-muted">{status}</p>}
     </div>
   );
 }
