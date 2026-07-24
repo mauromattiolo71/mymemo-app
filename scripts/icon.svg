@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#b8863b"/>
+  <text
+    x="256"
+    y="330"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-style="italic"
+    font-size="290"
+    fill="#fff9ee"
+    text-anchor="middle"
+  >M</text>
+</svg>
